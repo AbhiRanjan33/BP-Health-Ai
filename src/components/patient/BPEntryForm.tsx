@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { useUser } from "@clerk/nextjs";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Activity, Calendar, Clock } from "lucide-react";
+import { Activity, Calendar, Clock,HeartPulse } from "lucide-react";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -47,6 +48,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function BPEntryForm() {
   const [open, setOpen] = useState(false);
   const { user, isLoaded } = useUser();
+  const { data: session, status } = useSession();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -105,6 +107,32 @@ export default function BPEntryForm() {
         <Activity className="mr-2 h-5 w-5" />
         Fill BP & Health Readings
       </Button>
+
+      {/* NEW: GOOGLE FIT BUTTON */}
+    <div className="mt-4">
+      {status === "loading" ? (
+        <Button disabled className="w-full">
+          Loading…
+        </Button>
+      ) : session ? (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => signOut({ callbackUrl: "/dashboard/patient" })}
+        >
+          <HeartPulse className="mr-2 h-4 w-4" />
+          Disconnect Google Fit
+        </Button>
+      ) : (
+        <Button
+          className="w-full bg-green-600 hover:bg-green-700"
+          onClick={() => signIn("google", { callbackUrl: "/dashboard/patient" })}
+        >
+          <HeartPulse className="mr-2 h-4 w-4" />
+          Connect Google Fit
+        </Button>
+      )}
+    </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

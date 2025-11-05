@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Activity } from "lucide-react";
 import BPEntryForm from "@/components/patient/BPEntryForm";
+import BPChartCard from "@/components/patient/BPChartCard";
+import BPCommentsTable from "@/components/patient/BPCommentsTable";
+import GoogleFitActivityCard from "@/components/patient/GoogleFitActivityCard";
 
 export default function PatientDashboard() {
   return (
@@ -31,6 +34,14 @@ export default function PatientDashboard() {
             <p className="text-gray-600">Doctor-approved medication plan</p>
             <Button variant="outline" className="mt-4 w-full">View</Button>
           </Card>
+
+          <BPChartCard/>
+
+          <BPCommentsTable/>
+
+          <GoogleFitActivityCard />
+
+          
         </div>
       </div>
     </div>
