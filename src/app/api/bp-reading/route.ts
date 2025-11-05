@@ -1,38 +1,23 @@
 // src/app/api/bp-reading/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import {connectDB} from '@/lib/mongodb';
+import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { clerkId, ...readingData } = body;
-
-    if (!clerkId) {
-      return NextResponse.json({ error: 'clerkId required' }, { status: 400 });
-    }
-
-    const {
-      date, time, systolic, diastolic, pulse, bmi,
-      fastingBloodSugar, totalCholesterol, waistCircumference,
-      sleepQuality, stressLevel, notes
-    } = readingData;
-
-    if (!date || !time) {
-      return NextResponse.json({ error: 'Date and time required' }, { status: 400 });
-    }
-
     await connectDB();
+    const body = await req.json();
+    const { clerkId, date, time, systolic, diastolic, sleepQuality, stressLevel, notes } = body;
+
+    if (!clerkId || !date || !time || systolic == null || diastolic == null || sleepQuality == null || stressLevel == null) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
 
     const reading = {
-      date, time,
+      date,
+      time,
       systolic: Number(systolic),
       diastolic: Number(diastolic),
-      pulse: Number(pulse),
-      bmi: Number(bmi),
-      fastingBloodSugar: Number(fastingBloodSugar),
-      totalCholesterol: Number(totalCholesterol),
-      waistCircumference: Number(waistCircumference),
       sleepQuality: Number(sleepQuality),
       stressLevel: Number(stressLevel),
       notes,

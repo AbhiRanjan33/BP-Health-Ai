@@ -1,3 +1,4 @@
+// src/components/patient/BPEntryForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -26,18 +27,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Activity, Calendar, Clock,HeartPulse } from "lucide-react";
+import { Activity, Calendar, Clock, HeartPulse, Moon, Brain } from "lucide-react";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   time: z.string().min(1, "Time is required"),
   systolic: z.number().min(50).max(300),
   diastolic: z.number().min(30).max(200),
-  pulse: z.number().min(30).max(200),
-  bmi: z.number().min(10).max(50),
-  fastingBloodSugar: z.number().min(50).max(500),
-  totalCholesterol: z.number().min(100).max(400),
-  waistCircumference: z.number().min(50).max(200),
   sleepQuality: z.number().min(1).max(5),
   stressLevel: z.number().min(1).max(5),
   notes: z.string().optional(),
@@ -57,97 +53,87 @@ export default function BPEntryForm() {
       time: format(new Date(), "HH:mm"),
       systolic: 0,
       diastolic: 0,
-      pulse: 0,
-      bmi: 0,
-      fastingBloodSugar: 0,
-      totalCholesterol: 0,
-      waistCircumference: 0,
       sleepQuality: 3,
       stressLevel: 3,
       notes: "",
     },
   });
 
- const onSubmit = async (data: FormData) => {
-  if (!isLoaded || !user?.id) {
-    alert("Please wait for login...");
-    return;
-  }
-
-  try {
-    const response = await fetch('/api/bp-reading', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clerkId: user.id,  // ← SEND clerkId
-        ...data            // ← Spread all form data
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Save failed');
+  const onSubmit = async (data: FormData) => {
+    if (!isLoaded || !user?.id) {
+      alert("Please wait for login...");
+      return;
     }
 
-    const result = await response.json();
-    console.log("Saved:", result);
+    try {
+      const response = await fetch('/api/bp-reading', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clerkId: user.id,
+          ...data,
+        }),
+      });
 
-    alert("BP Reading Saved Successfully!");
-    setOpen(false);
-    form.reset();
-  } catch (err: any) {
-    console.error("BP Save Error:", err);
-    alert(err.message || "Failed to save. Check console.");
-  }
-};
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Save failed');
+      }
+
+      alert("BP Reading Saved Successfully!");
+      setOpen(false);
+      form.reset();
+    } catch (err: any) {
+      console.error("BP Save Error:", err);
+      alert(err.message || "Failed to save.");
+    }
+  };
 
   return (
     <>
       <Button onClick={() => setOpen(true)} size="lg" className="w-full mt-6">
         <Activity className="mr-2 h-5 w-5" />
-        Fill BP & Health Readings
+        Enter BP & Wellness
       </Button>
 
-      {/* NEW: GOOGLE FIT BUTTON */}
-    <div className="mt-4">
-      {status === "loading" ? (
-        <Button disabled className="w-full">
-          Loading…
-        </Button>
-      ) : session ? (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => signOut({ callbackUrl: "/dashboard/patient" })}
-        >
-          <HeartPulse className="mr-2 h-4 w-4" />
-          Disconnect Google Fit
-        </Button>
-      ) : (
-        <Button
-          className="w-full bg-green-600 hover:bg-green-700"
-          onClick={() => signIn("google", { callbackUrl: "/dashboard/patient" })}
-        >
-          <HeartPulse className="mr-2 h-4 w-4" />
-          Connect Google Fit
-        </Button>
-      )}
-    </div>
+      <div className="mt-4">
+        {status === "loading" ? (
+          <Button disabled className="w-full">Loading…</Button>
+        ) : session ? (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => signOut({ callbackUrl: "/dashboard/patient" })}
+          >
+            <HeartPulse className="mr-2 h-4 w-4" />
+            Disconnect Google Fit
+          </Button>
+        ) : (
+          <Button
+            className="w-full bg-green-600 hover:bg-green-700"
+            onClick={() => signIn("google", { callbackUrl: "/dashboard/patient" })}
+          >
+            <HeartPulse className="mr-2 h-4 w-4" />
+            Connect Google Fit
+          </Button>
+        )}
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-6 w-6 text-blue-600" />
-              Enter Today's Health Data
+              Enter Today's BP & Wellness
             </DialogTitle>
             <DialogDescription>
-              Your data is securely saved and used for personalized insights.
+              Track your blood pressure and how you feel.
             </DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/* DATE & TIME */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -165,7 +151,6 @@ export default function BPEntryForm() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="time"
@@ -184,7 +169,8 @@ export default function BPEntryForm() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              {/* BP */}
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="systolic"
@@ -203,7 +189,6 @@ export default function BPEntryForm() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="diastolic"
@@ -222,116 +207,18 @@ export default function BPEntryForm() {
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="pulse"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pulse (bpm)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="72"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="bmi"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>BMI</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          placeholder="22.5"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="fastingBloodSugar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fasting Blood Sugar (mg/dL)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="95"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="totalCholesterol"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Cholesterol (mg/dL)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="180"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="waistCircumference"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Waist Circumference (cm)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          placeholder="85"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+              {/* WELLNESS */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="sleepQuality"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Sleep Quality (1-5)</FormLabel>
+                      <FormLabel className="flex items-center gap-1">
+                        <Moon className="h-4 w-4" /> Sleep (1-5)
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -346,13 +233,14 @@ export default function BPEntryForm() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="stressLevel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Stress Level (1-5)</FormLabel>
+                      <FormLabel className="flex items-center gap-1">
+                        <Brain className="h-4 w-4" /> Stress (1-5)
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -369,6 +257,7 @@ export default function BPEntryForm() {
                 />
               </div>
 
+              {/* NOTES */}
               <FormField
                 control={form.control}
                 name="notes"
@@ -377,8 +266,8 @@ export default function BPEntryForm() {
                     <FormLabel>Notes (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Felt dizzy after lunch, took medication at 8 AM..."
-                        className="resize-none"
+                        placeholder="Felt lightheaded, took meds at 8 AM..."
+                        className="resize-none h-20"
                         {...field}
                       />
                     </FormControl>
@@ -387,7 +276,7 @@ export default function BPEntryForm() {
                 )}
               />
 
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-3 justify-end pt-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>

@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ import { ChevronRight } from "lucide-react";
 
 export default function PatientProfileForm() {
   const router = useRouter();
+  const { user, isLoaded } = useUser();
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     gender: "",
@@ -33,12 +36,41 @@ export default function PatientProfileForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Patient Profile Submitted:", formData);
-    alert("Profile saved! (Will be saved to DB later)");
-    router.push("/dashboard/patient");
+    if (!isLoaded || !user?.id) {
+      alert("Loading... Please wait.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/save-patient-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clerkId: user.id,   // ← SEND CLERK ID
+          ...formData         // ← SPREAD FORM DATA
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Save failed');
+      }
+
+      console.log("Profile saved:", { clerkId: user.id, ...formData });
+      alert("Profile saved successfully!");
+      router.push("/dashboard/patient");  // ← REDIRECT
+    } catch (err: any) {
+      console.error("Save Error:", err);
+      alert(err.message || "Failed to save.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (!isLoaded) return <div className="p-8">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
@@ -158,9 +190,13 @@ export default function PatientProfileForm() {
               </div>
             ))}
 
-            <Button type="submit" className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700">
-              Save Profile & Continue
-              <ChevronRight className="ml-2 h-5 w-5" />
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? "Saving..." : "Save Profile & Continue"}
+              {!loading && <ChevronRight className="ml-2 h-5 w-5" />}
             </Button>
           </form>
         </CardContent>
